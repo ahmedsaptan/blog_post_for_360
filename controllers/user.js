@@ -2,6 +2,8 @@ const { body, query, param } = require("express-validator");
 const { checkValidations } = require("../helpers/checkMethods");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const createHttpError = require("http-errors");
 
 const validateOnRegister = () => {
   return [
@@ -23,8 +25,14 @@ const validateOnRegister = () => {
       .bail()
       .custom(async (value, { req }) => {
         try {
-          // TODO:
-        } catch (error) {}
+          const existUser = await User.findOne({ email: value });
+          if (existUser) {
+            throw createHttpError(404, "User Already Exists");
+          }
+          return true;
+        } catch (error) {
+          throw error;
+        }
       }),
     body("password")
       .exists()
@@ -33,7 +41,7 @@ const validateOnRegister = () => {
       .notEmpty()
       .withMessage("password can't be empty")
       .bail()
-      .length({ min: 6 })
+      .isLength({ min: 6 })
       .withMessage("password min length is 6")
       .bail(),
   ];
@@ -47,10 +55,48 @@ const register = async (req, res, next) => {
 
     const salt = await bcrypt.genSalt(10);
 
-    user.password = await bcrypt.hash(password, salt);
+    user.password = await bcrypt.hash(body.password, salt);
 
     await user.save();
+
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    };
+
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: 36000 },
+      (err, token) => {
+        if (err) {
+          console.log(err);
+          throw err;
+        }
+        res.status(201).json({ token });
+      }
+    );
   } catch (error) {
-    next(e);
+    next(error);
   }
+};
+
+const getUser = async (req, res, next) => {
+  try {
+    const body = checkValidations(req);
+    const user = await (await User.findById(body.id)).select("-password");
+    if (!user) {
+      throw createHttpError(400, "user not found");
+    }
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  validateOnRegister,
+  register,
+  getUser,
 };
