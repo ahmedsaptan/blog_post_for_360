@@ -22,8 +22,6 @@ app.use(express.static(path.join(__dirname, "uploads/admin")));
 
 connectDB();
 
-app.get("/", (req, res) => res.send("API Running"));
-
 app.use("/api", require("./routes"));
 
 // Serve static assets in production
