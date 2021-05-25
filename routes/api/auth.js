@@ -6,6 +6,7 @@ const {
   loginUser,
 } = require("../../controllers/auth");
 const auth = require("../../middlewares/auth");
+
 router.get("/", [auth], getCurrentUser);
 router.post("/", [validateonLoginuser()], loginUser);
 

@@ -2,6 +2,8 @@ const createHttpError = require("http-errors");
 const User = require("../models/User");
 const { body } = require("express-validator");
 const { checkValidations } = require("../helpers/checkMethods");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const validateonLoginuser = () => {
   return [
@@ -42,6 +44,7 @@ const validateonLoginuser = () => {
 
 const getCurrentUser = async (req, res, next) => {
   try {
+    // debugger;
     const user = await User.findById(req.user.id).select("-password");
     if (!user) {
       throw createHttpError(400, "user not found");
@@ -73,7 +76,7 @@ const loginUser = async (req, res, next) => {
 
     jwt.sign(
       payload,
-      config.get("jwtSecret"),
+      process.env.JWT_SECRET,
       { expiresIn: "5 days" },
       (err, token) => {
         if (err) throw err;

@@ -52,7 +52,7 @@ const register = async (req, res, next) => {
     const body = checkValidations(req);
 
     const user = new User(body);
-
+    // debugger;
     const salt = await bcrypt.genSalt(10);
 
     user.password = await bcrypt.hash(body.password, salt);
